@@ -1,0 +1,114 @@
+# GitHub Pages Configuration for Theoretical Computer Science Textbook
+
+# Site settings
+title: "理論計算機科学教科書"
+subtitle: "数学的基礎から最先端研究まで"
+description: "理論計算機科学の包括的な教科書。数学的基礎から最先端の研究トピックまで、体系的に学習できるように構成。140以上の図表、豊富な練習問題、実装例、実世界での応用事例を含む。"
+baseurl: "/theoretical-computer-science-textbook-public"
+url: "https://itdojp.github.io"
+
+# Author information
+author:
+  name: "株式会社アイティードゥ"
+  email: "knowledge@itdo.jp"
+  github: "itdojp"
+
+# Theme and appearance
+# theme: minima
+remote_theme: pages-themes/minimal@v0.2.0
+
+# Plugins (GitHub Pages supported only)
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+  - jekyll-relative-links
+  # - jekyll-optional-front-matter  # Not supported on GitHub Pages
+  # - jekyll-readme-index           # Not supported on GitHub Pages
+  # - jekyll-titles-from-headings   # Not supported on GitHub Pages
+
+# Plugin settings
+relative_links:
+  enabled: true
+  collections: false
+
+# Commented out - not supported on GitHub Pages
+# optional_front_matter:
+#   remove_originals: true
+# 
+# readme_index:
+#   enabled: true
+#   remove_originals: false
+#   with_frontmatter: false
+# 
+# titles_from_headings:
+#   enabled: true
+#   strip_title: true
+#   collections: false
+
+# Markdown settings
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  math_engine: mathjax
+  syntax_highlighter_opts:
+    css_class: 'highlight'
+    span:
+      line_numbers: false
+    block:
+      line_numbers: false
+
+# Code highlighting
+highlighter: rouge
+
+# Collections
+collections:
+  chapters:
+    output: true
+    permalink: /:collection/:name/
+
+# Navigation
+nav_order: 
+  - index
+  - chapters
+  - resources
+  - exercises
+
+# Exclude files
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - .git/
+  - .github/
+  - CNAME
+  - LICENSE
+  - scripts/
+
+# Include files
+include:
+  - README.md
+  - _pages
+
+# SEO and social
+twitter:
+  username: itdojp
+  card: summary_large_image
+
+social:
+  name: 理論計算機科学教科書
+  links:
+    - https://twitter.com/itdojp
+    - https://github.com/itdojp
+
+# Google Analytics (optional)
+# google_analytics: G-XXXXXXXXXX
+
+# Mermaid support
+mermaid:
+  version: "9.4.3"

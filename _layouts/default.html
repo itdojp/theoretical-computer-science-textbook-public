@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <title>{{ page.title | default: site.title }}</title>
+    <meta name="description" content="{{ page.description | default: site.description }}">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="48x48" href="{{ '/assets/images/itdo_logo_48x48_blue.png' | relative_url }}">
+    <link rel="shortcut icon" type="image/png" href="{{ '/assets/images/itdo_logo_48x48_blue.png' | relative_url }}">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+    
+    <!-- MathJax for mathematical formulas -->
+    <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js">
+    </script>
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+            tex2jax: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            },
+            TeX: {
+                equationNumbers: { autoNumber: "AMS" },
+                extensions: ["AMSmath.js", "AMSsymbols.js"]
+            }
+        });
+    </script>
+    
+    <!-- Mermaid for diagrams -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            mermaid.initialize({
+                startOnLoad: true,
+                theme: 'default',
+                themeVariables: {
+                    fontFamily: '"Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif',
+                    fontSize: '16px'
+                }
+            });
+            
+            // Process any code blocks marked as mermaid
+            document.querySelectorAll('pre > code.language-mermaid').forEach(function(element) {
+                // Create a div to replace the code block
+                const graphDiv = document.createElement('div');
+                graphDiv.className = 'mermaid';
+                graphDiv.textContent = element.textContent;
+                
+                // Replace the pre element with the mermaid div
+                const preElement = element.parentElement;
+                preElement.parentElement.replaceChild(graphDiv, preElement);
+            });
+            
+            // Re-run mermaid on the new divs
+            mermaid.init();
+        });
+    </script>
+    
+    <!-- Syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script>
+        // Configure highlight.js to ignore mermaid blocks
+        hljs.configure({
+            ignoreUnescapedHTML: true
+        });
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Only highlight code blocks that are not mermaid
+            document.querySelectorAll('pre > code:not(.language-mermaid)').forEach(function(block) {
+                hljs.highlightElement(block);
+            });
+        });
+    </script>
+    
+    <!-- Custom CSS -->
+    <style>
+        body {
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            border-bottom: 2px solid #eee;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .header .subtitle {
+            color: #7f8c8d;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+        
+        .navigation {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+        
+        .navigation ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .navigation a {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .navigation a:hover {
+            text-decoration: underline;
+        }
+        
+        .content {
+            min-height: 70vh;
+        }
+        
+        .chapter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .chapter-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        
+        .chapter-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .chapter-card h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        
+        .chapter-card .emoji {
+            font-size: 2em;
+            margin-bottom: 10px;
+            display: block;
+        }
+        
+        .difficulty {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .difficulty-basic { background: #d4edda; color: #155724; }
+        .difficulty-intermediate { background: #fff3cd; color: #856404; }
+        .difficulty-advanced { background: #f8d7da; color: #721c24; }
+        .difficulty-expert { background: #d1ecf1; color: #0c5460; }
+        
+        .footer {
+            border-top: 2px solid #eee;
+            margin-top: 50px;
+            padding-top: 20px;
+            text-align: center;
+            color: #7f8c8d;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .navigation ul {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .chapter-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Mermaid diagram styling */
+        .mermaid {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        /* Code block styling */
+        pre {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+            overflow-x: auto;
+        }
+        
+        code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+        
+        /* Table styling */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        /* Progress indicator */
+        .progress-indicator {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 8px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            background: linear-gradient(90deg, #28a745, #17a2b8);
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>{{ site.title }}</h1>
+        <div class="subtitle">{{ site.subtitle }}</div>
+        <p>{{ site.description }}</p>
+    </div>
+    
+    <nav class="navigation">
+        <ul>
+            <li><a href="{{ '/' | relative_url }}">🏠 ホーム</a></li>
+            <li><a href="{{ '/complete-textbook-toc.html' | relative_url }}">📚 完全版目次</a></li>
+            <li><a href="{{ '/learning-progress-checklist.html' | relative_url }}">✅ 学習チェックリスト</a></li>
+            <li><a href="{{ '/chapter-solutions.html' | relative_url }}">📝 練習問題解答</a></li>
+            <li><a href="{{ '/algorithm-implementations.html' | relative_url }}">💻 実装例</a></li>
+            <li><a href="{{ '/real-world-applications.html' | relative_url }}">🌍 応用事例</a></li>
+        </ul>
+    </nav>
+    
+    <main class="content">
+        {{ content }}
+    </main>
+    
+    <footer class="footer">
+        <p>&copy; 2024 {{ site.author.name }}. Licensed under MIT License.</p>
+        <p>
+            <a href="https://github.com/{{ site.author.github }}/theoretical-computer-science-textbook">GitHub</a> |
+            <a href="https://zenn.dev/{{ site.author.github }}/books/theoretical-cs">Zenn</a> |
+            <a href="mailto:{{ site.author.email }}">Contact</a>
+        </p>
+    </footer>
+    
+    <!-- Additional JavaScript for enhanced functionality -->
+    <script>
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // Progress indicator for reading
+        window.addEventListener('scroll', function() {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            
+            const progressBar = document.querySelector('.progress-bar');
+            if (progressBar) {
+                progressBar.style.width = scrolled + '%';
+            }
+        });
+        
+        // Add reading time estimator
+        function estimateReadingTime() {
+            const text = document.querySelector('.content').innerText;
+            const wpm = 200; // Japanese reading speed (characters per minute)
+            const words = text.length;
+            const time = Math.ceil(words / wpm);
+            
+            return time;
+        }
+        
+        // Copy code blocks to clipboard
+        document.querySelectorAll('pre code').forEach((block) => {
+            const button = document.createElement('button');
+            button.className = 'copy-button';
+            button.textContent = 'Copy';
+            button.style.cssText = `
+                position: absolute;
+                top: 5px;
+                right: 5px;
+                background: #007bff;
+                color: white;
+                border: none;
+                padding: 5px 10px;
+                border-radius: 3px;
+                cursor: pointer;
+                font-size: 12px;
+            `;
+            
+            const pre = block.parentNode;
+            pre.style.position = 'relative';
+            pre.appendChild(button);
+            
+            button.addEventListener('click', () => {
+                navigator.clipboard.writeText(block.textContent).then(() => {
+                    button.textContent = 'Copied!';
+                    setTimeout(() => {
+                        button.textContent = 'Copy';
+                    }, 2000);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
