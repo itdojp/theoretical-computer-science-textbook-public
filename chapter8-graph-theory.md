@@ -10,6 +10,54 @@
 
 ### 8.1.1 グラフの表現と基本概念
 
+```mermaid
+graph TD
+    subgraph "グラフの基本概念と表現方法"
+        subgraph "グラフの種類"
+            UndirectedG["無向グラフ<br/>G = (V, E)<br/>E ⊆ {(u,v) | u,v ∈ V, u≠v}"]
+            DirectedG["有向グラフ<br/>G = (V, E)<br/>E ⊆ V × V"]
+            WeightedG["重み付きグラフ<br/>各辺に重み w(e)"]
+            
+            UndirectedEx["例: 友人関係<br/>A ↔ B ↔ C<br/>対称的関係"]
+            DirectedEx["例: Webリンク<br/>A → B → C<br/>方向性あり"]
+            WeightedEx["例: 道路網<br/>A -5km- B -3km- C<br/>距離や時間"]
+        end
+        
+        subgraph "グラフの表現方法"
+            AdjMatrix["隣接行列表現<br/>A[i,j] = 1 if (i,j) ∈ E"]
+            AdjList["隣接リスト表現<br/>各頂点の隣接頂点リスト"]
+            EdgeList["辺リスト表現<br/>辺の集合として"]
+            
+            MatrixEx["例: 3頂点グラフ<br/>  1 2 3<br/>1 0 1 0<br/>2 1 0 1<br/>3 0 1 0"]
+            ListEx["例: 同じグラフ<br/>1: [2]<br/>2: [1,3]<br/>3: [2]"]
+            EdgeEx["例: 同じグラフ<br/>{(1,2), (2,3)}"]
+        end
+        
+        subgraph "表現方法の比較"
+            SpaceComp["空間複雑度<br/>・隣接行列: O(|V|²)<br/>・隣接リスト: O(|V| + |E|)<br/>・辺リスト: O(|E|)"]
+            
+            TimeComp["時間複雑度<br/>辺の存在確認:<br/>・隣接行列: O(1)<br/>・隣接リスト: O(deg(v))<br/>・辺リスト: O(|E|)"]
+            
+            Usage["用途の違い<br/>・密グラフ → 隣接行列<br/>・疎グラフ → 隣接リスト<br/>・辺処理中心 → 辺リスト"]
+        end
+        
+        UndirectedG --> UndirectedEx
+        DirectedG --> DirectedEx
+        WeightedG --> WeightedEx
+        
+        AdjMatrix --> MatrixEx
+        AdjList --> ListEx
+        EdgeList --> EdgeEx
+    end
+    
+    style UndirectedG fill:#e3f2fd
+    style DirectedG fill:#fff3e0
+    style WeightedG fill:#e8f5e8
+    style AdjMatrix fill:#f3e5f5
+    style AdjList fill:#ffe0b2
+    style EdgeList fill:#e1f5fe
+```
+
 **定義 8.1** **グラフ** G = (V, E) は頂点集合 V と辺集合 E から構成される。
 - 無向グラフ：E ⊆ {(u, v) | u, v ∈ V, u ≠ v}
 - 有向グラフ：E ⊆ V × V
@@ -316,6 +364,89 @@ BFS が O(|V| + |E|) で最短路を求める。
 
 ### 8.3.2 Kruskalのアルゴリズム
 
+```mermaid
+graph TD
+    subgraph "Kruskalアルゴリズムの実行例"
+        subgraph "初期グラフ（重み付き）"
+            VA((A))
+            VB((B))
+            VC((C))
+            VD((D))
+            VE((E))
+            VF((F))
+            
+            VA -->|"4"| VB
+            VA -->|"2"| VC
+            VB -->|"3"| VC
+            VB -->|"6"| VD
+            VB -->|"5"| VE
+            VC -->|"1"| VD
+            VC -->|"4"| VE
+            VD -->|"2"| VE
+            VD -->|"3"| VF
+            VE -->|"6"| VF
+            
+            InitialState["辺を重みの昇順にソート:<br/>(C,D):1, (A,C):2, (D,E):2,<br/>(B,C):3, (D,F):3, (A,B):4,<br/>(C,E):4, (B,E):5, (B,D):6, (E,F):6"]
+        end
+        
+        subgraph "ステップ1: 辺(C,D)を追加"
+            Step1["辺(C,D):1を選択<br/>Find-Set(C) ≠ Find-Set(D)<br/>→ 追加<br/>Union(C,D)"]
+            
+            S1A((A))
+            S1B((B))
+            S1C((C))
+            S1D((D))
+            S1E((E))
+            S1F((F))
+            
+            S1C -.->|"1 ✓"| S1D
+            
+            Set1["連結成分:<br/>{A}, {B}, {C,D}, {E}, {F}"]
+        end
+        
+        subgraph "ステップ2-3: 辺(A,C)と(D,E)を追加"
+            Step2["辺(A,C):2を選択<br/>Find-Set(A) ≠ Find-Set(C)<br/>→ 追加, Union(A,C)<br/><br/>辺(D,E):2を選択<br/>Find-Set(D) ≠ Find-Set(E)<br/>→ 追加, Union(D,E)"]
+            
+            S2A((A))
+            S2B((B))
+            S2C((C))
+            S2D((D))
+            S2E((E))
+            S2F((F))
+            
+            S2A -.->|"2 ✓"| S2C
+            S2C -.->|"1 ✓"| S2D
+            S2D -.->|"2 ✓"| S2E
+            
+            Set2["連結成分:<br/>{A,C,D,E}, {B}, {F}"]
+        end
+        
+        subgraph "最終結果: 最小全域木"
+            Final["最小全域木の辺:<br/>(C,D):1<br/>(A,C):2<br/>(D,E):2<br/>(B,C):3 (AとBを接続)<br/>(D,F):3 (DとFを接続)<br/><br/>総重み: 1+2+2+3+3 = 11"]
+            
+            FA((A))
+            FB((B))
+            FC((C))
+            FD((D))
+            FE((E))
+            FF((F))
+            
+            FA -.->|"2"| FC
+            FB -.->|"3"| FC
+            FC -.->|"1"| FD
+            FD -.->|"2"| FE
+            FD -.->|"3"| FF
+            
+            MST["最小全域木の性質:<br/>・|V|-1 = 5本の辺<br/>・全頂点が連結<br/>・サイクルなし<br/>・総重み最小"]
+        end
+    end
+    
+    style Step1 fill:#e3f2fd
+    style Step2 fill:#fff3e0
+    style Final fill:#e8f5e8
+    style MST fill:#f3e5f5
+```
+
 ```
 Kruskal(G, w):
     A = ∅
@@ -616,6 +747,57 @@ Gale-Shapley(男性の選好, 女性の選好):
 
 ### 8.6.1 頂点彩色
 
+```mermaid
+graph TD
+    subgraph "グラフ彩色の概念と応用"
+        subgraph "基本的な彩色例"
+            Triangle["三角形グラフ<br/>χ(K₃) = 3"]
+            Square["4サイクル<br/>χ(C₄) = 2"]
+            Complete["完全グラフ<br/>χ(Kₙ) = n"]
+            
+            TriEx["A-赤, B-青, C-緑<br/>全て隣接→3色必要"]
+            SquareEx["A-赤, B-青<br/>C-赤, D-青<br/>交互配色→2色"]
+            CompleteEx["K₄では4色必要<br/>全頂点が隣接"]
+        end
+        
+        subgraph "彩色アルゴリズム比較"
+            Greedy["貪欲彩色<br/>Sequential Coloring"]
+            Welsh["Welsh-Powell法<br/>次数降順で彩色"]
+            DSatur["DSATUR法<br/>飽和度優先"]
+            
+            GreedyDesc["手順:<br/>1. 頂点順序を決定<br/>2. 各頂点に最小色を割当<br/>時間: O(|V|²)"]
+            WelshDesc["手順:<br/>1. 次数降順ソート<br/>2. 貪欲彩色適用<br/>効果: 高次数頂点優先"]
+            DSaturDesc["手順:<br/>1. 隣接色数を計算<br/>2. 飽和度最大を選択<br/>効果: より良い彩色"]
+        end
+        
+        subgraph "実用的応用"
+            Schedule["スケジューリング<br/>試験時間割問題"]
+            Register["レジスタ割当<br/>コンパイラ最適化"]
+            Frequency["周波数割当<br/>無線通信"]
+            
+            ScheduleEx["制約:<br/>・同じ学生が受ける試験<br/>は同時刻にできない<br/>→隣接頂点は異なる色"]
+            RegisterEx["制約:<br/>・同時に生きている変数<br/>は異なるレジスタ<br/>→干渉グラフの彩色"]
+            FrequencyEx["制約:<br/>・近接セルは異なる<br/>周波数を使用<br/>→干渉回避"]
+        end
+        
+        subgraph "理論的結果"
+            Brooks["Brooksの定理<br/>χ(G) ≤ Δ(G)<br/>（完全グラフ・奇サイクル除く）"]
+            Four["4色定理<br/>平面グラフは4彩色可能"]
+            Perfect["完全グラフ<br/>χ(G) = ω(G)"]
+            
+            BrooksEx["例外:<br/>・完全グラフKₙ: χ=n>Δ=n-1<br/>・奇サイクルC₂ₙ₊₁: χ=3>Δ=2"]
+            FourNote["証明:<br/>計算機援用証明<br/>1976年Appel-Haken"]
+            PerfectNote["ω(G): 最大クリークサイズ<br/>完全グラフでは一致"]
+        end
+    end
+    
+    style Triangle fill:#ffebee
+    style Greedy fill:#e3f2fd
+    style Schedule fill:#fff3e0
+    style Brooks fill:#e8f5e8
+    style Four fill:#f3e5f5
+```
+
 **定義 8.6** グラフ G の**彩色数** χ(G) は、
 隣接頂点が異なる色となるように頂点を彩色するのに必要な最小色数。
 
@@ -673,6 +855,58 @@ Gale-Shapley(男性の選好, 女性の選好):
 - 多項式時間で多くの NP困難問題が解ける
 
 ## 8.8 ランダムグラフ
+
+```mermaid
+graph TD
+    subgraph "ランダムグラフと現実ネットワークモデル"
+        subgraph "Erdős-Rényiモデル G(n,p)"
+            ER["均一ランダムグラフ<br/>各辺が確率pで独立に存在"]
+            ERProps["性質:<br/>・平均次数: (n-1)p<br/>・次数分布: 二項分布→Poisson<br/>・クラスタリング: p (低い)"]
+            ERPhase["相転移現象<br/>p = log(n)/n で連結性変化"]
+            
+            ERConnect["p < log(n)/n → 非連結<br/>p > log(n)/n → 連結<br/>臨界点での急激な変化"]
+        end
+        
+        subgraph "Watts-Strogatz小世界モデル"
+            WS["規則格子からランダム再配線"]
+            WSAlgo["アルゴリズム:<br/>1. 規則的なリング格子<br/>2. 各辺を確率pで再配線<br/>3. pで小世界性を制御"]
+            WSProps["性質:<br/>・小さい平均距離: O(log n)<br/>・高いクラスタリング係数<br/>・6次の隔たり現象説明"]
+            
+            WSExample["例: ソーシャルネットワーク<br/>・局所的なコミュニティ<br/>・少数の遠距離リンク<br/>・短い平均パス長"]
+        end
+        
+        subgraph "Barabási-Albert成長モデル"
+            BA["優先的選択による成長"]
+            BAAlgo["アルゴリズム:<br/>1. 初期小グラフから開始<br/>2. 新頂点を次数に比例して接続<br/>3. 'rich get richer'"]
+            BAProps["性質:<br/>・べき分布: P(k) ∝ k^(-γ)<br/>・γ ≈ 3 (理論値)<br/>・スケール不変性"]
+            
+            BAExample["例: WWW, 引用ネットワーク<br/>・少数のハブ<br/>・多数の低次数ノード<br/>・スケールフリー"]
+        end
+        
+        subgraph "現実ネットワークの比較"
+            RealProps["現実ネットワークの共通性質"]
+            SmallWorld["小世界性<br/>直径 ∝ log n"]
+            ScaleFree["スケールフリー性<br/>べき分布の次数"]
+            Community["コミュニティ構造<br/>密な部分グラフ"]
+            
+            Examples["実例:<br/>・インターネット (AS graph)<br/>・ソーシャルネットワーク<br/>・タンパク質相互作用<br/>・交通ネットワーク"]
+        end
+        
+        subgraph "モデルの適用性"
+            ERApp["G(n,p)適用例:<br/>・理論解析のベースライン<br/>・ランダム性の標準<br/>・相転移現象の研究"]
+            
+            WSApp["WS適用例:<br/>・ソーシャルネットワーク<br/>・神経ネットワーク<br/>・感染拡散モデル"]
+            
+            BAApp["BA適用例:<br/>・Web graph<br/>・学術引用ネットワーク<br/>・代謝ネットワーク"]
+        end
+    end
+    
+    style ER fill:#e3f2fd
+    style WS fill:#fff3e0
+    style BA fill:#e8f5e8
+    style RealProps fill:#f3e5f5
+    style ERPhase fill:#ffebee
+```
 
 ### 8.8.1 Erdős-Rényiモデル
 
