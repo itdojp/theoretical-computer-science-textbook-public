@@ -148,468 +148,311 @@ P R Q ならば、
 
 ## 12.3 Petri ネット
 
-### 12.3.1 基本定義
+### 12.3.1 Petri ネットの定義
 
 ```mermaid
 graph TD
-    subgraph "Petriネットによる並行システムモデリング"
+    subgraph "Petriネットの構成要素"
         subgraph "基本要素"
-            Places["プレース（○）<br/>・状態や条件を表す<br/>・トークンを保持<br/>・例：リソース、状態"]
+            Place["プレース（Place）<br/>・円で表現<br/>・システムの状態<br/>・トークンを保持"]
             
-            Transitions["トランジション（□）<br/>・イベントやアクションを表す<br/>・発火により状態変化<br/>・例：プロセス実行、操作"]
+            Transition["トランジション（Transition）<br/>・四角で表現<br/>・状態変化・イベント<br/>・発火により実行"]
             
-            Arcs["アーク（→）<br/>・プレースとトランジションを接続<br/>・重みを持つ<br/>・トークンフロー"]
+            Arc["アーク（Arc）<br/>・有向辺<br/>・プレースとトランジション間<br/>・重み付き可能"]
             
-            Tokens["トークン（●）<br/>・プレース内のリソース数<br/>・システムの現在状態<br/>・マーキング M(p)"]
+            Token["トークン（Token）<br/>・黒丸で表現<br/>・リソース・データ<br/>・動的要素"]
         end
         
-        subgraph "相互排除の例"
+        subgraph "単純な例：相互排他"
             P1["プロセス1<br/>待機"]
-            P2["プロセス2<br/>待機"]
-            Resource["共有リソース<br/>●"]
-            CS1["プロセス1<br/>クリティカル"]
-            CS2["プロセス2<br/>クリティカル"]
+            T1["プロセス1<br/>開始"]
+            P2["臨界区間<br/>利用可能"]
+            T2["プロセス1<br/>終了"]
+            P3["プロセス1<br/>実行中"]
             
-            T1["リソース<br/>取得1"]
-            T2["リソース<br/>取得2"]
-            T3["リソース<br/>解放1"]
-            T4["リソース<br/>解放2"]
+            P4["プロセス2<br/>待機"]
+            T3["プロセス2<br/>開始"]
+            T4["プロセス2<br/>終了"]
+            P5["プロセス2<br/>実行中"]
             
             P1 --> T1
-            T1 --> CS1
-            CS1 --> T3
-            T3 --> P1
-            T1 --> Resource
-            Resource --> T1
+            P2 --> T1
+            T1 --> P3
+            P3 --> T2
+            T2 --> P1
+            T2 --> P2
             
-            P2 --> T2
-            T2 --> CS2
-            CS2 --> T4
+            P4 --> T3
+            P2 --> T3
+            T3 --> P5
+            P5 --> T4
+            T4 --> P4
             T4 --> P2
-            T2 --> Resource
-            Resource --> T2
         end
         
-        subgraph "発火規則"
-            EnableRule["発火可能条件<br/>すべての入力プレースに<br/>十分なトークンがある"]
+        subgraph "発火条件と結果"
+            FireCondition["発火条件:<br/>・入力プレースに十分なトークン<br/>・アークの重み以上のトークン"]
             
-            FireRule["発火効果<br/>1. 入力からトークン除去<br/>2. 出力にトークン追加<br/>3. 原子的に実行"]
+            FireResult["発火結果:<br/>・入力プレースからトークン除去<br/>・出力プレースにトークン追加<br/>・原子的操作"]
             
-            Example["例：t が発火可能<br/>•t = {p1, p2}<br/>M(p1) ≥ 1, M(p2) ≥ 1"]
-        end
-        
-        subgraph "解析可能な性質"
-            Reachability["到達可能性<br/>・特定の状態に到達可能か<br/>・R(N, M₀) の計算"]
-            
-            Boundedness["有界性<br/>・トークン数に上限があるか<br/>・メモリ使用量の保証"]
-            
-            Liveness["活性<br/>・デッドロックの回避<br/>・すべてのトランジション発火可能"]
-            
-            Invariants["不変量<br/>・P-不変量：場所の線形結合<br/>・T-不変量：遷移の発火回数"]
+            Concurrency["並行性:<br/>・異なるトランジションの同時発火<br/>・競合の場合は非決定的選択"]
         end
     end
     
-    style Places fill:#e3f2fd
-    style Transitions fill:#fff3e0
-    style Resource fill:#ffebee
-    style Reachability fill:#e8f5e8
-    style Liveness fill:#f3e5f5
+    style Place fill:#e3f2fd
+    style Transition fill:#fff3e0
+    style Token fill:#e8f5e8
+    style P2 fill:#ffebee
 ```
 
-**定義 12.7** **Petri ネット**は5つ組 N = (P, T, F, W, M₀)：
-- P：プレース（場所）の有限集合
-- T：トランジション（遷移）の有限集合（P ∩ T = ∅）
-- F ⊆ (P × T) ∪ (T × P)：フロー関係
-- W: F → ℕ₊：重み関数
-- M₀: P → ℕ：初期マーキング
+**定義 12.7** **Petri ネット**は 4つ組 N = (P, T, F, W) で定義される：
+- P：プレースの有限集合
+- T：トランジションの有限集合（P ∩ T = ∅）
+- F ⊆ (P × T) ∪ (T × P)：フロー関係（アーク）
+- W: F → ℕ：重み関数
 
-### 12.3.2 実行意味論
+**マーキング** M: P → ℕ は各プレースのトークン数を示す。
 
-**定義 12.8** トランジション t が**発火可能** ⟺
-∀p ∈ •t, M(p) ≥ W(p, t)
-
-**発火規則**：t が発火すると、マーキングは以下のように変化：
-- ∀p ∈ •t: M'(p) = M(p) - W(p, t)
-- ∀p ∈ t•: M'(p) = M(p) + W(t, p)
-- その他：M'(p) = M(p)
-
-### 12.3.3 性質解析
-
-**到達可能性**：
-初期マーキング M₀ から到達可能なマーキングの集合 R(N, M₀)。
-
-**構造的性質**：
-- **有界性**：∀M ∈ R(N, M₀), ∀p ∈ P, M(p) ≤ k
-- **安全性**：1-有界性
-- **活性**：すべての到達可能マーキングから各トランジションが発火可能
-
-**不変量**：
-- **P-不変量**：Y^T · C = 0 を満たすベクトル Y
-- **T-不変量**：C · X = 0 を満たすベクトル X
-
-（C は接続行列）
-
-### 12.3.4 解析手法
-
-**可達木**：
-到達可能なマーキングを木構造で表現。無限の場合は ω を使用。
-
-**線形代数的手法**：
-状態方程式：M = M₀ + C · σ（σ は発火回数ベクトル）
-
-**定理 12.2** M が到達可能ならば状態方程式を満たす（逆は一般に不成立）。
-
-## 12.4 時相論理による並行システムの検証
-
-### 12.4.1 並行システムの性質
-
-**安全性**（Safety）："悪いことは起こらない"
-- 相互排除：同時にクリティカルセクションに入らない
-- 部分正当性：終了すれば正しい結果
-
-**活性**（Liveness）："良いことがいつか起こる"
-- 無飢餓性：要求したプロセスはいつかリソースを得る
-- 全域的進行：システム全体が進行する
-
-**公平性**（Fairness）：
-- 弱公平性：永続的に可能な動作はいつか実行される
-- 強公平性：無限回可能な動作はいつか実行される
-
-### 12.4.2 CTL による検証
-
-**並行システムのモデル化**：
-Kripke 構造 M = (S, S₀, R, L)
-- S：状態集合
-- S₀：初期状態集合
-- R：遷移関係
-- L：ラベリング関数
-
-**典型的な性質の記述**：
-- 相互排除：AG ¬(critical₁ ∧ critical₂)
-- 応答性：AG (request → AF grant)
-- 無飢餓：AG (request → AF critical)
-
-### 12.4.3 モデル検査アルゴリズム
-
-**状態爆発問題**：
-プロセス数に対して状態数が指数的に増加。
-
-**対策**：
-- シンボリックモデル検査（BDD を使用）
-- 有界モデル検査（SAT ソルバを使用）
-- 抽象化技法
-
-## 12.5 分散アルゴリズム
-
-### 12.5.1 分散システムのモデル
-
-**システムモデル**：
-- プロセス故障：クラッシュ、ビザンチン
-- 通信：同期、非同期
-- ネットワーク：完全グラフ、任意トポロジー
-
-**複雑性尺度**：
-- メッセージ複雑度
-- 時間複雑度（ラウンド数）
-- 空間複雑度（局所）
-
-### 12.5.2 基本的な分散アルゴリズム
-
-#### リーダー選出
-
-**LCR アルゴリズム**（リング上）：
-```
-各プロセス p：
-1. 自分の ID を右隣に送信
-2. 受信した ID が自分より大きければ転送
-3. 自分の ID を受信したらリーダー
-
-メッセージ複雑度：O(n²)
-時間複雑度：O(n)
-```
-
-**HS アルゴリズム**：
-双方向リング、フェーズごとに距離を倍増
-メッセージ複雑度：O(n log n)
-
-#### 相互排除
-
-**Lamport のベーカリーアルゴリズム**：
-```
-プロセス i がクリティカルセクションに入る：
-1. choosing[i] = true
-2. number[i] = max(number[0], ..., number[n-1]) + 1
-3. choosing[i] = false
-4. 各 j ≠ i に対して：
-   - choosing[j] = false を待つ
-   - (number[j] = 0) または
-     (number[i], i) < (number[j], j) を待つ
-5. クリティカルセクション
-6. number[i] = 0
-```
-
-### 12.5.3 合意問題
-
-**定義 12.9** **合意問題**の要件：
-- **合意**：すべての正常プロセスは同じ値を出力
-- **妥当性**：出力値は入力値の一つ
-- **停止性**：正常プロセスは有限時間で出力
-
-#### Byzantine 将軍問題
-
-**定理 12.3** n 個のプロセスのうち f 個が Byzantine 故障の場合、
-合意が可能 ⟺ n > 3f
-
-**証明の概要**（不可能性、n ≤ 3f）：
-3プロセスで1つが故障の場合を考える。対称性により矛盾を導く。□
-
-#### FLP 不可能性定理
-
-**定理 12.4**（Fischer-Lynch-Paterson）
-非同期システムでは、1つのプロセス故障でも決定的合意は不可能。
-
-**証明の概要**：
-- 2つの決定値の「境界」となる構成が存在
-- その構成から1ステップで決定が変わる
-- 故障により決定を遅延させ続けることが可能□
-
-### 12.5.4 分散スナップショット
-
-**Chandy-Lamport アルゴリズム**：
-一貫性のある大域状態を記録
-
-**アルゴリズム**：
-1. 開始プロセスが自状態を記録し、マーカーを送信
-2. マーカー受信時：
-   - 初回：自状態を記録、マーカーを転送
-   - 2回目以降：チャネル状態を記録
-
-**性質**：記録される状態は、実際の計算で起こりうる状態。
-
-## 12.6 並行データ構造
-
-### 12.6.1 ロックベースの手法
-
-**粗粒度ロック**：
-データ構造全体に1つのロック。単純だが並行性が低い。
-
-**細粒度ロック**：
-各ノードにロック。高い並行性だが、デッドロックの危険。
-
-**ハンドオーバーハンドロック**：
-リストやツリーの走査で、次のノードをロックしてから現在のノードを解放。
-
-### 12.6.2 ロックフリーアルゴリズム
+### 12.3.2 動的挙動と発火規則
 
 ```mermaid
 graph TD
-    subgraph "並行データ構造の設計手法"
-        subgraph "ロックベース vs ロックフリー"
-            LockBased["ロックベース<br/>・排他制御により安全性確保<br/>・デッドロック、優先度逆転<br/>・コンテキストスイッチオーバーヘッド"]
+    subgraph "Petriネットの発火メカニズム"
+        subgraph "発火前状態"
+            Before["初期マーキング M₀"]
+            P1_before["P1: ●●"]
+            P2_before["P2: ●"]
+            P3_before["P3: "]
+            T1_before["T1（発火可能）"]
             
-            LockFree["ロックフリー<br/>・CAS等の原子的操作<br/>・システム全体の進行保証<br/>・ABA問題への対処必要"]
-            
-            WaitFree["ウェイトフリー<br/>・全プロセスの進行保証<br/>・最も強い進行保証<br/>・実装が複雑"]
+            Before --> P1_before
+            Before --> P2_before
+            Before --> P3_before
         end
         
-        subgraph "CAS による ロックフリースタック"
-            Init["初期状態<br/>Top → Node1 → Node2 → null"]
+        subgraph "発火条件チェック"
+            Check["∀p ∈ •t: M(p) ≥ W(p,t)<br/>前置プレースに十分なトークン"]
             
-            Push1["Push(NewNode)<br/>1. t = Top を読み取り"]
-            Push2["2. NewNode.next = t"]
-            Push3["3. CAS(&Top, t, NewNode)<br/>成功ならNewNodeが新しいTop"]
-            
-            Pop1["Pop()<br/>1. t = Top を読み取り"]
-            Pop2["2. t == null なら null返却"]
-            Pop3["3. CAS(&Top, t, t.next)<br/>成功なら t を返却"]
-            
-            Init --> Push1
-            Push1 --> Push2
-            Push2 --> Push3
-            
-            Init --> Pop1
-            Pop1 --> Pop2
-            Pop2 --> Pop3
+            Enable["T1が発火可能<br/>・P1に2個のトークン必要→有<br/>・P2に1個のトークン必要→有"]
         end
         
-        subgraph "ABA問題と対策"
-            ABA_Problem["ABA問題<br/>1. スレッドAが値Aを読み取り<br/>2. スレッドBが A→B→A に変更<br/>3. スレッドAのCASが誤って成功"]
+        subgraph "発火後状態"
+            After["新マーキング M₁"]
+            P1_after["P1: "]
+            P2_after["P2: "]
+            P3_after["P3: ●●●"]
+            T1_after["T1（発火完了）"]
             
-            Solution1["対策1: ポインタタグ<br/>・ポインタに世代番号付加<br/>・ABA→A'B'A''に変化"]
-            
-            Solution2["対策2: ハザードポインタ<br/>・使用中ポインタを保護<br/>・ガベージコレクション延期"]
-            
-            Solution3["対策3: RCU<br/>・Read-Copy-Update<br/>・読み手を妨げない更新"]
+            After --> P1_after
+            After --> P2_after
+            After --> P3_after
         end
         
-        subgraph "進行性の保証レベル"
-            Obstruction["妨害自由<br/>（Obstruction-Free）<br/>単独実行なら進行"]
+        subgraph "発火効果"
+            Remove["入力プレースからトークン除去<br/>M'(p) = M(p) - W(p,t)"]
+            Add["出力プレースにトークン追加<br/>M'(p) = M(p) + W(t,p)"]
+            Atomic["発火は原子的操作<br/>途中状態は存在しない"]
+        end
+        
+        Before --> Check
+        Check --> Enable
+        Enable --> After
+        
+        Remove --> After
+        Add --> After
+        Atomic --> After
+    end
+    
+    style Before fill:#e3f2fd
+    style Check fill:#fff3e0
+    style After fill:#e8f5e8
+    style Enable fill:#f3e5f5
+```
+
+**発火規則**：
+トランジション t が発火可能 ⟺ ∀p ∈ •t, M(p) ≥ W(p,t)
+
+発火後のマーキング：M'(p) = M(p) - W(p,t) + W(t,p)
+
+### 12.3.3 Petri ネットの解析性質
+
+**到達可能性**：初期マーキング M₀ から到達可能なマーキングの集合 R(N, M₀)
+
+**有界性**：すべての到達可能なマーキング M とプレース p に対して M(p) ≤ k
+
+**活性**：任意の到達可能なマーキングから、さらにそのトランジションを発火可能
+
+## 12.4 デッドロック
+
+### 12.4.1 デッドロックの特徴
+
+```mermaid
+graph TD
+    subgraph "デッドロックの4つの必要条件（Coffmanの条件）"
+        subgraph "相互排他（Mutual Exclusion）"
+            ME1["リソースRは一度に一つのプロセスのみ使用可能"]
+            ME2["プロセスPがRを使用中"]
+            ME3["プロセスQはRが解放されるまで待機"]
             
-            LockFreeGuarantee["ロックフリー<br/>（Lock-Free）<br/>システム全体で進行"]
+            ME1 --> ME2
+            ME2 --> ME3
+        end
+        
+        subgraph "保持と待機（Hold and Wait）"
+            HW1["プロセスが少なくとも一つのリソースを保持"]
+            HW2["同時に他のリソースを要求"]
+            HW3["要求したリソースが他プロセスに保持されている"]
             
-            WaitFreeGuarantee["ウェイトフリー<br/>（Wait-Free）<br/>各スレッドが進行"]
+            HW1 --> HW2
+            HW2 --> HW3
+        end
+        
+        subgraph "非プリエンプション（No Preemption）"
+            NP1["プロセスが保持するリソース"]
+            NP2["強制的に取り上げ不可"]
+            NP3["プロセス自身が自発的に解放するまで保持"]
             
-            Obstruction --> LockFreeGuarantee
-            LockFreeGuarantee --> WaitFreeGuarantee
+            NP1 --> NP2
+            NP2 --> NP3
+        end
+        
+        subgraph "循環待機（Circular Wait）"
+            CW1["プロセスP₁がプロセスP₂の保持するリソースを待機"]
+            CW2["プロセスP₂がプロセスP₃の保持するリソースを待機"]
+            CW3["..."]
+            CW4["プロセスPₙがプロセスP₁の保持するリソースを待機"]
+            
+            CW1 --> CW2
+            CW2 --> CW3
+            CW3 --> CW4
+            CW4 --> CW1
         end
     end
     
-    style LockBased fill:#ffebee
-    style LockFree fill:#e8f5e8
-    style WaitFree fill:#e3f2fd
-    style ABA_Problem fill:#fff3e0
-    style WaitFreeGuarantee fill:#f3e5f5
+    style ME1 fill:#e3f2fd
+    style HW1 fill:#fff3e0
+    style NP1 fill:#e8f5e8
+    style CW1 fill:#f3e5f5
 ```
 
-**定義 12.10** データ構造が**ロックフリー**⟺
-無限のステップ中で、少なくとも1つの操作が完了する。
+### 12.4.2 資源割当グラフによるデッドロック検出
 
-**CAS（Compare-and-Swap）**：
-```
-CAS(addr, old, new):
-    atomically:
-        if *addr == old:
-            *addr = new
-            return true
-        else:
-            return false
-```
-
-**例：ロックフリースタック**
-```
-Push(x):
-    loop:
-        t = Top
-        x.next = t
-        if CAS(&Top, t, x):
-            return
+```mermaid
+graph TD
+    subgraph "資源割当グラフ（Resource Allocation Graph）"
+        subgraph "グラフの構成要素"
+            Process["プロセスノード<br/>（円）"]
+            Resource["リソースノード<br/>（四角）"]
+            Request["要求エッジ<br/>プロセス → リソース"]
+            Allocation["割当エッジ<br/>リソース → プロセス"]
+        end
         
-Pop():
-    loop:
-        t = Top
-        if t == null:
-            return null
-        if CAS(&Top, t, t.next):
-            return t
+        subgraph "デッドロック状況の例"
+            P1["P1"]
+            P2["P2"]
+            R1["R1"]
+            R2["R2"]
+            
+            P1 --> R2
+            R1 --> P1
+            P2 --> R1
+            R2 --> P2
+            
+            DeadlockCycle["循環<br/>P1 → R2 → P2 → R1 → P1<br/>デッドロック発生"]
+        end
+        
+        subgraph "デッドロック回避の例"
+            P3["P3"]
+            P4["P4"]
+            P5["P5"]
+            R3["R3"]
+            R4["R4"]
+            
+            P3 --> R4
+            R3 --> P3
+            P4 --> R3
+            R4 --> P5
+            P5 --> R4
+            
+            NoDeadlock["循環なし<br/>リソース解放可能<br/>デッドロック回避"]
+        end
+        
+        subgraph "検出アルゴリズム"
+            Algorithm["1. グラフから循環を検出<br/>2. DFSによる後退エッジ検索<br/>3. 循環検出時はデッドロック"]
+            
+            Complexity["時間複雑度: O(V + E)<br/>V: ノード数（プロセス+リソース）<br/>E: エッジ数"]
+        end
+    end
+    
+    style DeadlockCycle fill:#ffebee
+    style NoDeadlock fill:#e8f5e8
+    style Algorithm fill:#e3f2fd
 ```
 
-### 12.6.3 線形化可能性
+### 12.4.3 銀行家アルゴリズム（Banker's Algorithm）
 
-**定義 12.11** 並行オブジェクトが**線形化可能**⟺
-各操作が、呼び出しと応答の間のある時点で瞬間的に効果を持つように見える。
-
-**性質**：
-- 合成可能性：線形化可能なオブジェクトの組み合わせも線形化可能
-- 局所性：各オブジェクトを独立に推論可能
-
-## 12.7 プロセス計算の高度な話題
-
-### 12.7.1 π計算
-
-**構文**：
+```mermaid
+graph TD
+    subgraph "銀行家アルゴリズムによるデッドロック回避"
+        subgraph "データ構造"
+            Available["Available[m]<br/>各リソースタイプの利用可能数"]
+            Max["Max[n][m]<br/>各プロセスの最大リソース需要"]
+            Allocation["Allocation[n][m]<br/>各プロセスの現在割当"]
+            Need["Need[n][m]<br/>各プロセスの残り需要<br/>Need = Max - Allocation"]
+        end
+        
+        subgraph "安全性アルゴリズム"
+            Step1["1. Work = Available<br/>Finish[i] = false (all i)"]
+            Step2["2. Finish[i] = false かつ<br/>Need[i] ≤ Work のプロセス i を探す"]
+            Step3["3. 見つかれば:<br/>Work = Work + Allocation[i]<br/>Finish[i] = true"]
+            Step4["4. 全プロセスでFinish[i] = true<br/>なら安全状態"]
+            
+            Step1 --> Step2
+            Step2 --> Step3
+            Step3 --> Step2
+            Step2 --> Step4
+        end
+        
+        subgraph "リソース要求処理"
+            Request["Request[i]<br/>プロセス i のリソース要求"]
+            Check1["Request[i] ≤ Need[i]?"]
+            Check2["Request[i] ≤ Available?"]
+            TentativeAlloc["仮割当:<br/>Available -= Request[i]<br/>Allocation[i] += Request[i]<br/>Need[i] -= Request[i]"]
+            SafetyCheck["安全性チェック実行"]
+            
+            Request --> Check1
+            Check1 -->|Yes| Check2
+            Check2 -->|Yes| TentativeAlloc
+            TentativeAlloc --> SafetyCheck
+            SafetyCheck -->|Safe| Grant["要求承認"]
+            SafetyCheck -->|Unsafe| Rollback["割当取消<br/>要求拒否"]
+            
+            Check1 -->|No| Error1["エラー:<br/>最大需要超過"]
+            Check2 -->|No| Wait["プロセス待機"]
+        end
+        
+        subgraph "例：3プロセス、3リソースタイプ"
+            ExampleState["初期状態:<br/>Available = [3,3,2]<br/>Max = [[7,5,3],[3,2,2],[9,0,2]]<br/>Allocation = [[0,1,0],[2,0,0],[3,0,2]]<br/>Need = [[7,4,3],[1,2,2],[6,0,0]]"]
+            
+            SafeSequence["安全シーケンス:<br/>P1 → P0 → P2<br/>または<br/>P1 → P2 → P0"]
+        end
+    end
+    
+    style Step4 fill:#e8f5e8
+    style Grant fill:#e8f5e8
+    style Rollback fill:#ffebee
+    style SafeSequence fill:#f3e5f5
 ```
-P ::= 0 | τ.P | x(y).P | x̄⟨y⟩.P | P|Q | (νx)P | !P
-```
 
-**名前の移動性**：
-チャネル名を値として送受信できる。
+**時間複雑度**：安全性アルゴリズムは O(mn²)
+- m：リソースタイプ数
+- n：プロセス数
 
-**スコープ拡張**：
-```
-(νx)(x̄⟨z⟩.P | Q) | x(y).R → (νx)(P | Q | R[z/y])
-```
+### 12.4.4 デッドロック対策の比較
 
-### 12.7.2 Ambient 計算
+1. **予防**：Coffmanの条件の一つを破る
+2. **回避**：銀行家アルゴリズムによる動的チェック
+3. **検出と回復**：定期的な検出と強制終了
+4. **無視**：鳥駝政策（現実的なアプローチ）
 
-**移動性のモデル化**：
-プロセスが階層的な場所（ambient）間を移動。
-
-**基本操作**：
-- in n：ambient n に入る
-- out n：ambient n から出る
-- open n：ambient n を開く
-
-### 12.7.3 確率的プロセス代数
-
-**確率的選択**：
-P +_p Q：確率 p で P、確率 1-p で Q を選択
-
-**応用**：
-- 性能解析
-- 信頼性評価
-- ランダム化プロトコルの検証
-
-## 12.8 実時間システム
-
-### 12.8.1 時間オートマトン
-
-**定義 12.12** **時間オートマトン**は以下の組：
-- 有限の場所集合
-- クロック変数の有限集合
-- クロック制約付き遷移
-
-**意味論**：
-- 時間経過：すべてのクロックが同じ速度で進む
-- 離散遷移：ガード条件を満たすとき遷移、クロックリセット
-
-### 12.8.2 時間付き時相論理
-
-**TCTL（Timed CTL）**：
-- EF_{≤d} φ：d 時間単位以内に φ となる経路が存在
-- AG_{≤d} φ：すべての経路で d 時間単位まで常に φ
-
-**モデル検査**：
-領域グラフによる有限表現。
-
-## 章末問題
-
-### 基礎問題
-
-1. 2つのプロセスが交互に実行される以下のプログラムで、
-   最終的な x の値として可能なものをすべて求めよ：
-   ```
-   共有変数: x = 0
-   P1: x = x + 1; x = x + 1
-   P2: x = x * 2
-   ```
-
-2. CCS で以下のプロセスの双模倣等価性を判定せよ：
-   (a) a.b.0 + a.c.0 と a.(b.0 + c.0)
-   (b) (a.0 | b.0)\{a} と b.0
-
-3. 哲学者の食事問題を Petri ネットでモデル化し、
-   デッドロックが起こることを示せ。
-
-4. n プロセスのベーカリーアルゴリズムが相互排除を満たすことを証明せよ。
-
-### 発展問題
-
-5. 分散システムにおける論理時計について：
-   (a) Lamport 時計の定義と性質を述べよ
-   (b) ベクトル時計との違いを説明せよ
-
-6. コンセンサス数について：
-   (a) 各同期プリミティブのコンセンサス数を求めよ
-   (b) 階層定理を説明せよ
-
-7. ロックフリーキューの実装：
-   (a) Michael-Scott アルゴリズムを説明せよ
-   (b) ABA 問題とその対策を論ぜよ
-
-8. 弱メモリモデルについて：
-   (a) TSO と PSO の違いを説明せよ
-   (b) メモリバリアの必要性を例を挙げて示せ
-
-### 探究課題
-
-9. ブロックチェーンのコンセンサスアルゴリズムについて調査し、
-   Proof of Work、Proof of Stake、PBFT の特徴を比較せよ。
-
-10. トランザクショナルメモリについて調査し、
-    ソフトウェア実装とハードウェア実装の得失を論ぜよ。
-
-11. アクターモデルについて調査し、
-    共有メモリモデルとの違いと実装例（Erlang、Akka）を説明せよ。
-
-12. 形式的検証ツール（TLA+、SPIN、NuSMV など）について調査し、
-    産業界での応用例を示せ。
+本章では、並行計算の理論的基礎を学びました。これらの概念は、マルチコアシステム、分散システム、クラウドコンピューティングなど、現代の計算環境において不可欠な知識です。
